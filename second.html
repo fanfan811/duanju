@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>视频分类</title>
+    <style>
+        /* 继承主页面的基础样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #E8F0FF, #F5F0FF);
+        }
+
+        .header {
+            position: relative;
+            width: 100%;
+            height: 400px; /* 固定高度为600px */
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        .slideshow-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .slide.active {
+            opacity: 1;
+        }
+
+        .header {
+            background: url('https://p.sda1.dev/22/8c69c53d75cbd8a9d4299a99d00e4c0b/001423-1703780063fe7c.jpg') center center/cover no-repeat;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            height: 800px; /* 保持高度 */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* 隐藏超出部分 */
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.3)); /* 渐变遮罩 */
+            z-index: 1;
+        }
+
+        .header h1 {
+            position: relative;
+            z-index: 2;
+            font-size: 42px; /* 增大标题字体 */
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.8);
+            margin-top: 80px; /* 调整标题位置 */
+        }
+
+        .back-button {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            background: rgba(255, 255, 255, 0.2); /* 半透明背景 */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2;
+            border: 1px solid rgba(255, 255, 255, 0.3); /* 半透明边框 */
+        }
+
+        .back-button::before {
+            content: '←';
+            font-size: 18px;
+            transition: transform 0.3s ease;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3); /* 更亮的背景 */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-button:hover::before {
+            transform: translateX(-3px);
+        }
+
+        /* 从主页面复制的图片容器相关样式 */
+        .image-container {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 20px;
+            padding: 30px;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .image-item {
+            position: relative;
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(137, 207, 240, 0.1);
+            transition: all 0.3s ease;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        .corner-label {
+            display: none; /* 隐藏原来的角标 */
+        }
+
+        .image-item:hover .corner-label {
+            background: linear-gradient(45deg, rgba(63, 81, 181, 0.9), rgba(92, 107, 192, 0.9));
+        }
+
+        .play-button-container {
+            padding: 15px;
+            text-align: center;
+            background: #fff;
+            border-radius: 0 0 15px 15px;
+        }
+
+        .play-button {
+            background: linear-gradient(45deg, #89CFF0, #A293E3);
+            color: white;
+            padding: 8px 25px;
+            border-radius: 20px;
+            border: none;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(137, 207, 240, 0.2);
+        }
+
+        .play-button:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(45deg, #A293E3, #89CFF0);
+            box-shadow: 0 6px 20px rgba(137, 207, 240, 0.3);
+        }
+
+        .image-item img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 15px 15px 0 0;
+            transition: all 0.3s ease;
+        }
+
+        /* 视频弹窗样式 */
+        .video-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+
+        .video-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 1000px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .video-wrapper {
+            position: relative;
+            padding-top: 56.25%;
+            height: 0;
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .close-video {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 35px;
+            height: 35px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 2001;
+        }
+
+        .close-video:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .video-footer {
+            padding: 20px 0;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .refresh-btn {
+            background: linear-gradient(45deg, #89CFF0, #A293E3);
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(137, 207, 240, 0.3);
+            backdrop-filter: blur(5px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .refresh-btn:hover {
+            background: linear-gradient(45deg, #A293E3, #89CFF0);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(137, 207, 240, 0.4);
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 1600px) {
+            .image-container {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .image-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .image-container {
+                grid-template-columns: repeat(2, 1fr);
+                padding: 15px;
+            }
+        }
+
+        /* 修改主题色和样式 */
+        .video-card {
+            background: linear-gradient(45deg, #2C3E50, #3498DB);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(44, 62, 80, 0.4);
+            background: linear-gradient(45deg, #3498DB, #2C3E50);
+        }
+
+        .video-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            transition: all 0.3s;
+        }
+
+        /* 修改页面背景色 */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        /* 修改标题样式 */
+        .title {
+            text-align: center;
+            margin: 40px 0;
+            color: #2C3E50;
+            font-size: 28px;
+            font-weight: 600;
+            text-shadow: 1px 1px 2px rgba(44, 62, 80, 0.1);
+        }
+
+        /* 修改卡片标题样式 */
+        .video-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        /* 修改卡片描述样式 */
+        .video-description {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.6;
+            text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="slideshow-container">
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/8c69c53d75cbd8a9d4299a99d00e4c0b/001423-1703780063fe7c.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/90562133d4488e2bfd303d745d4cfd20/233720-1718811440dded.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/5d04e4e48693f7f916db33b97d5caa92/122156-1707625316a9e1.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/2acb53e0b6a36d810bfdec966e7c174e/ad5d9a6879dde88400813858233282e0a3810f97 _1_.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/722668e772e000d232b9a687a02302f1/v2-57b1da8297bc4265a2bc29fa70aa28ea_r.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/8303810a0434b43b2af00fdcc2405e50/v2-27889267dbc2cd44eb696b9fbe7916e0_r.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/d8fc25265d14f831ebfcfadefc0ca7b4/v2-ef3cb511abaa62bb08c5dc8f5236fc75_r.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/202156eed70df1e1c263434707fb3930/v2-eb52cb2b8ce2142183a6474ca8db2cac_r.jpg');"></div>
+            <div class="slide" style="background-image: url('https://p.sda1.dev/22/8099335e187f8b2565b98a029c1e1b11/v2-316d0685ef680095ba03a7e0da7e4c53_r.jpg');"></div>
+        </div>
+        <button class="back-button" onclick="window.location.href='wy.html'">返回主页</button>
+        <h1>视频分类</h1>
+    </div>
+    
+    <div class="image-container">
+        <!-- 从主页面复制的所有卡片 -->
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/zzxjj.php?type=video')">
+            <img src="https://p.sda1.dev/22/1d35228028923127eaa40aca89c0b41d/_2_泡泡甜汤_来自小红书网页版 _3_.jpg" alt="Image 1">
+            <div class="play-button-container">
+                <button class="play-button">随机小姐姐</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/zzxjj.php?type=video')">
+            <img src="https://p.sda1.dev/22/84d0f23573cf63a8e7fa4fa5139eb0a3/_3_奶油yoki_来自小红书网页版_1_.jpg" alt="Image 2">
+            <div class="play-button-container">
+                <button class="play-button">女大学生</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/wmsc.php?type=video')">
+            <img src="https://p.sda1.dev/22/66db6dfafab32db55723494f557a4ea3/_3_奶油yoki_来自小红书网页版.jpg" alt="Image 3">
+            <div class="play-button-container">
+                <button class="play-button">完美身材</button>
+            </div>
+        </div>
+
+    
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/diaodai.php?type=video')">
+            <img src="https://p.sda1.dev/22/c536e65d9040e8050508cb2e96557d1f/_5_NANA_来自小红书网页版_2_.jpg" alt="Image 4">
+            <div class="play-button-container">
+                <button class="play-button">吊带系列</button>
+            </div>
+        </div>
+
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/nvgao.php?type=video')">
+            <img src="https://p.sda1.dev/22/b1e73ff73dcc5aab5a89097dbcaa279e/被花包围了_2_何语蝶蝶__来自小红书网页版_2_.jpg" alt="Image 5">
+            <div class="play-button-container">
+                <button class="play-button">双倍快乐</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/nvgao.php?type=video')">
+            <img src="https://p.sda1.dev/22/c265c43ff3fa0807c6d7c319ef8374e9/Baking Day~_2_智恩宝宝ya_来自小红书网页版_1_.jpg" alt="Image 6">
+            <div class="play-button-container">
+                <button class="play-button">清纯女高</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/yuzu.php?type=video')">
+            <img src="https://p.sda1.dev/22/403af606a91c4ac4502f51e3bb019432/city walk🇭🇰_1_罗拉Barby_来自小红书网页版_1_.jpg" alt="Image 7">
+            <div class="play-button-container">
+                <button class="play-button">清凉一腿</button>
+            </div>
+        </div>
+        
+        <div class="image-item" onclick="toPlaye('https://api.yujn.cn/api/duilian.php?type=video')">
+            <img src="https://p.sda1.dev/22/6b8047362a9acfae86588b4f47f2aa46/ootd｜穿搭分享 临沂find day探店_3_无语兔_来自小红书网页版_3_.jpg" alt="Image 1">
+            <div class="play-button-container">
+                <button class="play-button">怼脸自拍</button>
+            </div>
+        </div>
+        
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/chuanda.php?type=video')">
+             <img src="https://p.sda1.dev/22/ea286e5f77fc5f8f9a4d0d22802e5f8d/ss33_来自小红书网页版 _4_.jpg" alt="Image 2">
+            <div class="play-button-container">
+                <button class="play-button">穿搭系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/yuzu.php?type=video')">
+            <img src="https://p.sda1.dev/22/afdec6feeb35cd071158de884e19a1ff/stay hungry_2_吃我一奶拳_来自小红书网页版.jpg" alt="Image 3">
+            <div class="play-button-container">
+                <button class="play-button">玉足美腿</button>
+            </div>
+       </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/zrn.php?type=video')">
+            <img src="https://p.sda1.dev/22/9c7d86c22014faa6da6c8c49e547f599/8f3cc7b46eb7a124a42da24bc63f70f83afa943d3630e-soPO74_fw658.webp" alt="Image 4">
+            <div class="play-button-container">
+                <button class="play-button">章若楠系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/shwd.php?type=video')">
+            <img src="https://p.sda1.dev/22/60a746beb55d09d236fbd39860c2b2ee/澳门_油画般的大三巴牌坊_小众机位_1_宫羽_来自小红书网页版_4_.jpg" alt="Image 5">
+            <div class="play-button-container">
+                <button class="play-button">丝滑舞蹈</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/hanfu.php?type=video')">
+            <img src="https://p.sda1.dev/22/eb78e42406af39100acd9afc73a61bd9/宝宝 看我 真的没感觉吗_2_妍11_来自小红书网页版_2_.jpg" alt="Image 6">
+            <div class="play-button-container">
+                <button class="play-button">古风系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/COS.php?type=video')">
+            <img src="https://p.sda1.dev/22/bb7a2f06c8ac1ebaa3e47023afcd45e1/1.5885535477461658E9.png" alt="Image 7">
+            <div class="play-button-container">
+                <button class="play-button">cos动漫系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/yuzu.php?type=video')">
+            <img src="https://p.sda1.dev/22/9994e1d43991c617a61fdb145a3c7420/别在家不理我研究星座_1_Caicai_来自小红书网页版_4_.jpg" alt="Image 1">
+            <div class="play-button-container">
+                <button class="play-button">小giegie</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/qingchun.php?type=video')">
+            <img src="https://p.sda1.dev/22/eaedb3400a4b773b3cc620b39321a587/氛围感拍照 易如反掌哈哈_1_G.png" alt="Image 2">
+            <div class="play-button-container">
+                <button class="play-button">清纯系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/tianmei.php?type=video')">
+            <img src="https://p.sda1.dev/22/2801ec03838c4fc4fae267225c18c31b/氛围感拍照我悟了_3_是可可酱呀_来自小红书网页版_1_.png" alt="Image 3">
+            <div class="play-button-container">
+                <button class="play-button">你的甜妹</button>
+            </div>
+        </div>
+
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/rewu.php?type=video')">
+            <img src="https://p.sda1.dev/22/27061eec0ec71a327c7fa2450a3bdae1/广州新展_2_吃我一奶拳_来自小红书网页版_3_.png" alt="Image 4">
+            <div class="play-button-container">
+                <button class="play-button">热舞视频</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/ndym.php?type=video')">
+            <img src="https://p.sda1.dev/22/8a17a7c9b84a19bca5dc18e0d24272f6/广州下午茶打卡拍照_天河_1_小c家_来自小红书网页版_1_.png" alt="Image 5">
+            <div class="play-button-container">
+                <button class="play-button">你的欲梦</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/jksp.php?type=video')">
+            <img src="https://p.sda1.dev/22/9001eede19a7d3808bf8b0317904dc53/_2_NANA_来自小红书网页版_1_.jpg" alt="Image 6">
+            <div class="play-button-container">
+                <button class="play-button">JK洛丽塔</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/jjy.php?type=video')">
+            <img src="https://p.sda1.dev/22/1d35228028923127eaa40aca89c0b41d/_2_泡泡甜汤_来自小红书网页版 _3_.jpg" alt="Image 7">
+            <div class="play-button-container">
+                <button class="play-button">鞠婧祎系列</button>
+            </div>
+        </div>
+
+        <div class="image-item" onclick="toPlaye('https://api.yujn.cn/api/tongtong.php?type=video')">
+            <img src="https://p.sda1.dev/22/b2d695a6fbc85d5326b3d96538227f6a/_3_奶油yoki_来自小红书网页版_2_.jpg" alt="Image 15">
+            <div class="play-button-container">
+                <button class="play-button">抖音瞳瞳系列</button>
+            </div>
+        </div>
+
+        <div class="image-item" onclick="toPlaye(' http://api.yujn.cn/api/heisis.php?type=video')">
+            <img src="https://p.sda1.dev/22/d8bedcf6682673555628c66120c6e2ff/city walk🇭🇰_1_罗拉Barby_来自小红书网页版.jpg" alt="Image 16">
+            <div class="play-button-container">
+                <button class="play-button">随机黑丝</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('  http://api.yujn.cn/api/baisis.php?type=video')">
+            <img src="https://p.sda1.dev/22/218797de71836397addc4c1037033254/ss33_来自小红书网页版 _3_.jpg" alt="Image 17">
+            <div class="play-button-container">
+                <button class="play-button">随机白丝</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/luoli.php?type=video')">
+            <img src="https://p.sda1.dev/22/20de79e38606ce86e36615a554c31935/爱我就让我踩着你往上爬_1_Caicai_来自小红书网页版_1_.jpg" alt="Image 18">
+            <div class="play-button-container">
+                <button class="play-button">萝莉系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/juhexjj.php?type=video')">
+            <img src="https://p.sda1.dev/22/8eed43705149c5ef65faf660b66561f6/澳门_油画般的大三巴牌坊_小众机位_1_宫羽_来自小红书网页版_2_.jpg" alt="Image 19">
+            <div class="play-button-container">
+                <button class="play-button">各类小姐姐</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/shejie.php?type=video')">
+            <img src="https://p.sda1.dev/22/0909a666a42d421d32190a8acbeed38b/宝宝 看我 真的没感觉吗_2_妍11_来自小红书网页版_1_.jpg" alt="Image 20">
+            <div class="play-button-container">
+                <button class="play-button">杀猪饲料蛇姐</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/xiaoxiao.php?')">
+            <img src="https://p.sda1.dev/22/3785759308aab3033ff141c22b9a2f83/被花包围了_2_何语蝶蝶__来自小红书网页版.jpg" alt="Image 21">
+            <div class="play-button-container">
+                <button class="play-button">抖音潇潇</button>
+            </div>
+        </div>
+
+        <div class="image-item" onclick="toPlaye('https://api.yujn.cn/api/manzhan.php?type=video')">
+            <img src="https://p.sda1.dev/22/08d827b272bd63cdeff3d7906572fbe2/别在家不理我研究星座_1_Caicai_来自小红书网页版_1_.jpg" alt="Image 22">
+            <div class="play-button-container">
+                <button class="play-button">漫展视频</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/mengwa.php?type=video')">
+            <img src="https://p.sda1.dev/22/9994e1d43991c617a61fdb145a3c7420/别在家不理我研究星座_1_Caicai_来自小红书网页版_4_.jpg" alt="Image 23">
+            <div class="play-button-container">
+                <button class="play-button">萌娃系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/jiepai.php?type=video')">
+            <img src="https://p.sda1.dev/22/d8593ac500ae0e4b8ef701aece13959e/大雾终将散去_1_uni_来自小红书网页版_1_.jpg" alt="Image 24">
+            <div class="play-button-container">
+                <button class="play-button">街拍系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/dmsp.php?')">
+            <img src="https://p.sda1.dev/22/eaedb3400a4b773b3cc620b39321a587/氛围感拍照 易如反掌哈哈_1_G.png" alt="Image 25">
+            <div class="play-button-container">
+                <button class="play-button">动漫视频</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/zuqiu.php?')">
+            <img src="https://p.sda1.dev/22/40c314702e5a0bd7f89303fc5801e79a/rpucyAsnyE8tqIfRpl92N2C4KQK5lE9jAM7ud0PCoWA.jpeg" alt="Image 26">
+            <div class="play-button-container">
+                <button class="play-button">世界杯</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/xgg.php?type=video')">
+            <img src="https://p.sda1.dev/22/ffb87d899108db330111bfbe8ab82958/_3_孙静怡🥑_来自小红书网页版_1_.jpg" alt="Image 27">
+            <div class="play-button-container">
+                <button class="play-button">帅哥系列</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/haibian.php?')">
+            <img src="https://p.sda1.dev/22/71c8ae016ee424b8548d49032c043990/2019_0919_2_2.jpg" alt="Image 28">
+            <div class="play-button-container">
+                <button class="play-button">海边晚霞</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/pcfjsp.php?')">
+            <img src="https://p.sda1.dev/22/76e358e053cef51b2e6528df5a9aeb4b/o4lAADdCWIADAAaKqSOpMbA1sgDWfCnAlE49Ae~noop.jpeg" alt="Image 29">
+            <div class="play-button-container">
+                <button class="play-button">二次元房间</button>
+            </div>
+        </div>
+        <div class="image-item" onclick="toPlaye('http://api.yujn.cn/api/ps.php?')">
+            <img src="https://p.sda1.dev/22/581d4d851ef3f041111487cf855ea586/_1_奶油yoki_来自小红书网页版_1_.jpg" alt="Image 30">
+            <div class="play-button-container">
+                <button class="play-button">ps技巧</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 视频播放弹窗 -->
+    <div id="videoModal" class="video-modal">
+        <button class="close-video" onclick="closeVideoModal()">&times;</button>
+        <div class="video-container">
+            <div class="video-wrapper">
+                <iframe id="videoFrame" allowfullscreen></iframe>
+            </div>
+            <div class="video-footer">
+                <button class="refresh-btn" onclick="refreshVideo()">
+                    <i>↻</i>换个视频
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentVideoApi = ''; // 保存当前视频API地址
+
+        function toPlaye(url) {
+            const videoModal = document.getElementById('videoModal');
+            const videoFrame = document.getElementById('videoFrame');
+            
+            currentVideoApi = url; // 保存API地址
+            videoFrame.src = url + '&t=' + new Date().getTime();
+            
+            videoModal.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+
+            document.addEventListener('keydown', handleVideoEsc);
+            
+            videoModal.onclick = function(event) {
+                if (event.target === videoModal) {
+                    closeVideoModal();
+                }
+            };
+        }
+
+        function closeVideoModal() {
+            const videoModal = document.getElementById('videoModal');
+            const videoFrame = document.getElementById('videoFrame');
+            
+            videoFrame.src = '';
+            videoModal.style.display = 'none';
+            document.body.style.overflow = '';
+            document.removeEventListener('keydown', handleVideoEsc);
+        }
+
+        function handleVideoEsc(event) {
+            if (event.key === 'Escape') {
+                closeVideoModal();
+            }
+        }
+
+        function refreshVideo() {
+            const videoFrame = document.getElementById('videoFrame');
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const refreshIcon = refreshBtn.querySelector('i');
+            
+            refreshIcon.style.transform = 'rotate(360deg)';
+            videoFrame.src = currentVideoApi + '&t=' + new Date().getTime();
+            
+            setTimeout(() => {
+                refreshIcon.style.transform = 'rotate(0deg)';
+            }, 500);
+        }
+
+        // 新增函数：获取视频随机帧作为封面
+        async function getVideoThumbnail(videoUrl, imgElement) {
+            try {
+                const video = document.createElement('video');
+                video.crossOrigin = 'anonymous';
+                video.src = videoUrl;
+                
+                video.addEventListener('loadeddata', () => {
+                    // 随机选择一个时间点
+                    const randomTime = Math.random() * video.duration;
+                    video.currentTime = randomTime;
+                });
+
+                video.addEventListener('seeked', () => {
+                    // 创建canvas并绘制视频帧
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // 将canvas内容转换为图片URL
+                    imgElement.src = canvas.toDataURL();
+                });
+            } catch (error) {
+                console.error('获取视频封面失败:', error);
+                // 使用默认图片作为fallback
+                imgElement.src = 'https://p.sda1.dev/22/84d0f23573cf63a8e7fa4fa5139eb0a3/_3_奶油yoki_来自小红书网页版_1_.jpg';
+            }
+        }
+
+        // 修改女大学生卡片初始化
+        window.onload = function() {
+            const girlStudentImg = document.querySelector('.image-item:nth-child(2) img');
+            getVideoThumbnail('http://api.yujn.cn/api/zzxjj.php?type=video', girlStudentImg);
+        }
+
+        // 轮播图功能
+        const slides = document.querySelectorAll('.slide');
+        let currentSlide = 0;
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+        }
+
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % slides.length;
+            showSlide(currentSlide);
+        }
+
+        // 初始化显示第一张图片
+        showSlide(0);
+        // 设置轮播间隔
+        setInterval(nextSlide, 5000);
+
+        function getRandomImage() {
+            // 将接口地址改为快手随机接口
+            fetch('http://api.yujn.cn/api/ksxjj.php')
+                .then(response => response.blob())
+                .then(blob => {
+                    const imageUrl = URL.createObjectURL(blob);
+                    document.getElementById('randomImage').src = imageUrl;
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能搜索</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .search-container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .result-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.3s;
+        }
+        .result-item:hover {
+            background-color: #f9f9f9;
+        }
+        .result-item h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .result-item p {
+            color: #666;
+            font-size: 14px;
+        }
+        .no-results {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        mark {
+            background-color: #fff3cd;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="search-container">
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="请输入搜索关键词..." autofocus>
+            <button onclick="performSearch()">搜索</button>
+        </div>
+        <div id="results" class="results"></div>
+    </div>
+
+    <script>
+        // 获取热门短剧数据的API地址
+        const API_URL = 'http://localhost:5001/api/v1/dramas';
+
+        // 页面加载完成后自动执行
+        window.onload = function() {
+            // 添加回车键搜索功能
+            document.getElementById('searchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+            
+            // 加载时显示热门短剧
+            showTopDramas();
+        };
+
+        // 显示热门短剧
+        async function showTopDramas() {
+            const resultsDiv = document.getElementById('results');
+            try {
+                const response = await fetch(`${API_URL}/top`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('网络请求失败');
+                }
+                const result = await response.json();
+                
+                if (result.code !== 200 || !result.data) {
+                    throw new Error('数据获取失败');
+                }
+
+                const topDramas = result.data.slice(0, 10); // 取前10条
+
+                resultsDiv.innerHTML = `
+                    <h2 style="margin-bottom: 20px; color: #333;">热门短剧推荐</h2>
+                    ${topDramas.map(item => `
+                        <div class="result-item">
+                            <h3>${item.name}</h3>
+                            <p><a href="${item.viewlink}" target="_blank">${item.viewlink}</a></p>
+                        </div>
+                    `).join('')}
+                `;
+            } catch (error) {
+                console.error('获取热门短剧出错:', error);
+                resultsDiv.innerHTML = '<div class="no-results">无法加载热门短剧，请稍后重试</div>';
+            }
+        }
+
+        // 执行搜索
+        async function performSearch() {
+            const searchInput = document.getElementById('searchInput');
+            const resultsDiv = document.getElementById('results');
+            const keyword = searchInput.value.trim();
+            
+            if (!keyword) {
+                resultsDiv.innerHTML = '<div class="no-results">请输入搜索关键词</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}?keyword=${encodeURIComponent(keyword)}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('网络请求失败');
+                }
+                const result = await response.json();
+                
+                if (result.code !== 200 || !result.data) {
+                    throw new Error('数据获取失败');
+                }
+
+                const searchData = result.data;
+
+                if (searchData.length === 0) {
+                    resultsDiv.innerHTML = '<div class="no-results">未找到相关结果</div>';
+                    return;
+                }
+
+                resultsDiv.innerHTML = searchData.map(item => `
+                    <div class="result-item">
+                        <h3>${highlightKeyword(item.name, keyword)}</h3>
+                        <p><a href="${item.viewlink}" target="_blank">${item.viewlink}</a></p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('搜索出错:', error);
+                resultsDiv.innerHTML = '<div class="no-results">搜索失败，请稍后重试</div>';
+            }
+        }
+
+        // 高亮关键词
+        function highlightKeyword(text, keyword) {
+            if (!keyword) return text;
+            const regex = new RegExp(keyword, 'gi');
+            return text.replace(regex, match => `<mark>${match}</mark>`);
+        }
+    </script>
+</body>
+</html>
