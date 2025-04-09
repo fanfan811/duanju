@@ -4945,7 +4945,7 @@
             const animeImg = document.getElementById('currentAnime');
             modal.classList.add('show');
             // 显示新的养眼图
-            animeImg.src = `https://api.zhcnli.cn/api/sjtp/tupian.php?type=mnt=${Date.now()}`;
+            animeImg.src = `https://api.zhcnli.cn/api/sjtp/tupian.php?type=mn?t=${Date.now()}`;
             // 根据图片大小调整弹窗
             adjustModalSize(animeImg, modal);
         }
@@ -4963,7 +4963,7 @@
             refreshBtn.style.transform = 'rotate(360deg)';
             
             // 更新图片
-            animeImg.src = `https://api.zhcnli.cn/api/sjtp/tupian.php?type=mnt=${Date.now()}`;
+            animeImg.src = `https://api.zhcnli.cn/api/sjtp/tupian.php?type=mn?t=${Date.now()}`;
             
             // 0.5秒后重置旋转
             setTimeout(() => {
