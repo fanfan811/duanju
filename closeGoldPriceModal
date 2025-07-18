@@ -3238,7 +3238,7 @@
         <button class="fun-button" onclick="showChatBotModal()">
             <i>🤖</i>智能机器人
         </button>
-        <!-- <button class="fun-button" onclick="showHoroscopeModal()">
+        <button class="fun-button" onclick="showHoroscopeModal()">
             <i>♈️</i>星座运势
         </button>
         <button class="fun-button" onclick="showProductModal()">
@@ -3255,7 +3255,7 @@
         </button>
         <button class="fun-button" onclick="showMorningNewsModal()">
             <i>🌍</i>60秒读懂世界
-        </button> -->
+        </button>
     </div>
 
     <!-- 在视频图片区上方添加最近更新区域
